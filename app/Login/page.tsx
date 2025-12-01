@@ -25,8 +25,11 @@ export default function LoginPage() {
             {
                 router.push("/home");
             }
-            else {
+            else if(data.role){
                 router.push("/captainHome");
+            }
+            else {
+                router.push("/admin"); // also add a check for admin in backend
             }
        
             

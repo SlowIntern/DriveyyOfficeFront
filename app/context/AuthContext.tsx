@@ -1,8 +1,6 @@
 'use client'
 import { createContext, ReactNode, useEffect, useState } from "react";
 import api from "../lib/api";
-import { toast } from "react-toastify";
-
 
 export type User = {
     userId: string;
@@ -13,14 +11,12 @@ export type User = {
 type AuthContextType = {
     user: User | null;
     loading: boolean;
-    login: (data: { email: string; password: string; role: 'user' | "captain" }) => Promise<void>;
+    login: (data: { email: string; password: string; role: 'user' | 'captain' }) => Promise<void>;
     logout: () => Promise<void>;
     fetchProfile: () => Promise<void>;
 }
 
-
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
@@ -28,54 +24,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const fetchProfile = async () => {
         try {
-            const res =await api.get("/auth/profile");
+            const res = await api.get("/auth/profile");
             setUser(res.data);
-        }
-        catch (error)
-        {
-         
-           console.log("Why i am getting this fucking error")
-        
-           throw error;  // it neccesary otherwise get som comlexities
-
-        }
-        finally {
+        } catch (error) {
+            setUser(null);  // ❗ Do NOT throw — just clear user
+        } finally {
             setLoading(false);
         }
-    }
+    };
 
-    //  useEffect(() => {  // commenting this to stop fetch user functionality
-    //      fetchProfile();
-    //  }, []);
-
+    useEffect(() => {
+        fetchProfile(); // load user on first page load
+    }, []);
 
     const login = async (data: { email: string; password: string; role: 'user' | 'captain' }) => {
         try {
-            const res = await api.post('/auth/login', data);
-            // Wait 200ms to ensure cookie is saved in browser
-           // await new Promise((resolve) => setTimeout(resolve, 200));
-
+            await api.post("/auth/login", data);
             await fetchProfile();
-            
-        }
-        catch (error)
-        {
-            console.log(error);
-            
+        } catch (error) {
             throw error;
         }
-    }
+    };
 
     const logout = async () => {
-        const res = api.post("/auth/logout");
-
+        await api.post("/auth/logout");
         setUser(null);
-    }
+    };
 
     return (
         <AuthContext.Provider value={{ user, loading, login, logout, fetchProfile }}>
             {children}
         </AuthContext.Provider>
     );
-    
-}
+};

@@ -1,14 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import api from "../lib/api";
-
+import { useAuth } from "../hooks/useAuth";
+type rides = {
+    id: string,
+    source: string,
+    destination: string,    
+}
 export default function StartRidePage() {
     const [rideId, setRideId] = useState("");
     const [otp, setOtp] = useState("");
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const[ride,setRide]= useState<rides | null>(null)
+    const { user } = useAuth();
+
+
+    useEffect(() => {
+        if (loading) return; // Don't run until loading is done
+
+        if (!user) {
+            toast.error("Failed to fetch captain info");
+            return;
+        }
+
+        // user exists → fetch ride
+        const fetchRide = async () => {
+            try {
+                const res = await api.get("/rides/currentride");
+                setRideId(res.data.rideId);
+                console.log("Ride ID:", res.data._id);
+            } catch (err) {
+                console.log("Ride fetch failed:", err);
+            }
+        };
+
+        fetchRide(); // <-- MUST CALL IT
+    }, [user, loading]);
+
+
 
     const handleStartRide = async () => {
         if (!rideId || !otp) {

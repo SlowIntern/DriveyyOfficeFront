@@ -4,11 +4,12 @@ import { Car, Menu, X, MapPin, Wallet, Timer, Star } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import api from "../lib/api";
+import { useAuth } from "../hooks/useAuth";
 
 export default function CaptainHomePage() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [online, setOnline] = useState(false);
-
+    const { logout,user } = useAuth();
     const  toggleOnline = async () => {
         if (!online)
         {
@@ -46,14 +47,14 @@ export default function CaptainHomePage() {
 
                     {/* Desktop Menu */}
                     <div className="hidden md:flex items-center space-x-8">
-                        <Link href="#" className="text-gray-300 hover:text-white transition-all">Home</Link>
-                        <Link href="#" className="text-gray-300 hover:text-white transition-all">Rides</Link>
-                        <Link href="#" className="text-gray-300 hover:text-white transition-all">Earnings</Link>
-                        <Link href="#" className="text-gray-300 hover:text-white transition-all">Profile</Link>
-
-                        <button className="px-5 py-2 bg-linear-to-r from-blue-600 to-purple-600 rounded-full font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all">
+                        <Link href={"/captainHome"} className="text-gray-300 hover:text-white transition-all">Home</Link>
+                        
+                        <Link href={"/Captain"} className="text-gray-300 hover:text-white transition-all">Rides Request</Link>
+                        <Link href={"/captainProfile"} className="text-gray-300 hover:text-white transition-all">Profile</Link>
+                        {user ? (<button onClick={logout} className="px-5 py-2 bg-linear-to-r from-blue-600 to-purple-600 rounded-full font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all">
                             Logout
-                        </button>
+                        </button>) : (<Link href={"/Login"} className="text-gray-300 hover:text-white transition-all">Login</Link>)}
+                       
                     </div>
 
                     {/* Mobile Menu */}
@@ -68,13 +69,14 @@ export default function CaptainHomePage() {
                 {mobileMenuOpen && (
                     <div className="md:hidden bg-black/95 backdrop-blur-lg border-b border-gray-800">
                         <div className="px-6 py-4 space-y-4">
-                            <Link href="#" className="block text-lg text-gray-300 hover:text-white">Home</Link>
-                            <Link href="#" className="block text-lg text-gray-300 hover:text-white">Rides</Link>
-                            <Link href="#" className="block text-lg text-gray-300 hover:text-white">Earnings</Link>
-                            <Link href="#" className="block text-lg text-gray-300 hover:text-white">Profile</Link>
-                            <button className="w-full py-3 bg-linear-to-r from-blue-600 to-purple-600 rounded-full font-medium">
+                            <Link href={"/captainHome"} className="block text-lg text-gray-300 hover:text-white">Home</Link>
+                            <Link href={"/Captain"} className="block text-lg text-gray-300 hover:text-white">Rides  Request</Link>
+                            <Link href={"/captainProfile"} className="block text-lg text-gray-300 hover:text-white">Profile</Link>
+                
+                            {user ? (<button onClick={logout} className="px-5 py-2 bg-linear-to-r from-blue-600 to-purple-600 rounded-full font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all">
                                 Logout
-                            </button>
+                            </button>) : (<Link href={"/Login"} className="text-gray-300 hover:text-white transition-all">Login</Link>)}
+
                         </div>
                     </div>
                 )}

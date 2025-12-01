@@ -4,7 +4,7 @@ import "./globals.css";
 import { ToastContainer } from "react-toastify";
 import { AuthProvider } from "./context/AuthContext";
 import "leaflet/dist/leaflet.css";
-import Link from "next/link";
+
 
 
 
@@ -35,8 +35,6 @@ export default function RootLayout({
         
       >
         <AuthProvider>
-          <Link href={"/home"}>Home</Link>
-          <Link href={"/admin"}>admin</Link>
         {children}
         <ToastContainer />
         </AuthProvider>
