@@ -4,8 +4,7 @@ import "./globals.css";
 import { ToastContainer } from "react-toastify";
 import { AuthProvider } from "./context/AuthContext";
 import "leaflet/dist/leaflet.css";
-
-
+import Script from "next/script"; // ← ADD THIS
 
 
 const geistSans = Geist({
@@ -25,19 +24,24 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+
+        {/** ✅ Razorpay Script */}
+        <Script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          strategy="afterInteractive"
+        />
+
         <AuthProvider>
-        {children}
-        <ToastContainer />
+          {children}
+          <ToastContainer />
         </AuthProvider>
+
       </body>
     </html>
   );
