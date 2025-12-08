@@ -77,12 +77,15 @@ export default function UberCloneHomepage() {
             console.log("Selected vehicle:", vehicleType);
             console.log("pickup", getValues("pickup"));
             console.log("destination", getValues("destination"));
-        
-            const ride = await api.post("/rides", {
+            
+            const data = {
                 pickup: getValues("pickup"),
                 destination: getValues("destination"),
-                vehicleType,
-            });
+                vehicleType
+            }
+
+            console.log("Ride data:", data);
+            const ride = await api.post("/rides", data);
 
             console.log("Ride created:", ride.data); // ← CHECK THIS
             toast.success("Ride booked successfully!");
@@ -185,6 +188,7 @@ export default function UberCloneHomepage() {
                                             {fareData.map((item, i) => (
                                                 <button
                                                     key={i}
+                                                    type="button"
                                                     onClick={() => selectVehicle(item.type)}
                                                     className="p-4 bg-gray-800 border border-gray-700 rounded-xl flex justify-between hover:bg-gray-700"
                                                 >

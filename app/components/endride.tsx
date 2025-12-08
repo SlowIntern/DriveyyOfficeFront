@@ -1,18 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import api from "../lib/api";
 import ORSMap from "./ORSMap";
+import RidePaymentButton from "../razorpay/page";
+
+
+type Ride = {
+    rideId: string;
+    captainsocketId: string;
+    usersocketId: string;
+    pickup: string;
+    destination: string;
+};
 
 export default function EndRide() {
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [ride, setRide] = useState<Ride | null>(null);
 
-    const end = async () => {
+    async function fetchRideDetail() {
+        try {
+            const res = await api.get("rides/currentride");
+            setRide(res.data);
+        } catch (error) {
+            console.log(error);
+            toast.error("Error loading current ride");
+        }
+    }
+
+    useEffect(() => {
+        fetchRideDetail();
+    }, []);
+
+    const endRide = async () => {
         try {
             setLoading(true);
-            await api.get("/rides/endridebyme");
+            await api.get("/rides/endridebyme"); // End ride API
             setShowSuccess(true);
             toast.success("Ride ended successfully!");
         } catch (error) {
@@ -23,33 +48,42 @@ export default function EndRide() {
         }
     };
 
+    // Called when payment is successful
+    const handlePaymentSuccess = async () => {
+        toast.info("Payment successful, ending ride...");
+        await endRide(); // End the ride automatically after payment
+    };
+
     return (
         <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center justify-center relative overflow-hidden">
-            <ORSMap pickup={[28.6139, 77.2090]} destination={[28.7041, 77.1025]} />
-            {/* Background gradients */}
-            <div className="absolute inset-0 -z-10">
-                <div className="absolute top-10 left-10 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-                <div className="absolute top-40 right-20 w-80 h-80 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-500"></div>
-                <div className="absolute bottom-20 left-1/3 w-72 h-72 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-700"></div>
-            </div>
+
+            {/* ORSMap */}
+            {ride && (
+                <div className="w-full max-w-3xl mb-6 rounded-xl overflow-hidden border border-gray-700">
+                    <ORSMap pickup={ride.pickup} destination={ride.destination} />
+                </div>
+            )}
 
             <h1 className="text-4xl font-bold mb-6 bg-linear-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 End Your Ride
             </h1>
 
             <p className="text-gray-400 text-center mb-6 max-w-md">
-                Click the button below to safely end your ride.
+                Complete your payment to safely end your ride.
             </p>
 
-            <button
-                onClick={end}
-                className="bg-red-500 hover:bg-red-600 px-6 py-3 rounded-full w-full text-white font-semibold"
-                disabled={loading}
-            >
-                {loading ? "Ending..." : "End Ride"}
-            </button>
+            {/* Payment Button */}
+            {ride && (
+                <button onClick={handlePaymentSuccess}>
+                    <RidePaymentButton
+                        rideId={ride.rideId}
 
-            {/* Spinner */}
+                    />
+                </button>
+              
+            )}
+
+            {/* Loading Spinner */}
             {loading && (
                 <div className="w-16 h-16 border-4 border-t-red-400 border-gray-700 rounded-full animate-spin mt-6"></div>
             )}
