@@ -50,8 +50,8 @@ export default function EndRide() {
 
     // Called when payment is successful
     const handlePaymentSuccess = async () => {
-        toast.info("Payment successful, ending ride...");
         await endRide(); // End the ride automatically after payment
+        toast.success("Ride ended successfully moving to payment page");
     };
 
     return (

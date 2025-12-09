@@ -6,7 +6,6 @@ export default function EndRidess() {
         <div>
 
             <EndRide />
-            <RidePaymentButton rideId="692fcc98b036de3a1b7d1ed2" />
         </div>
     )
 }
