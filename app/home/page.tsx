@@ -87,6 +87,8 @@ export default function UberCloneHomepage() {
             console.log("Ride data:", data);
             const ride = await api.post("/rides", data);
 
+            localStorage.setItem("rideId", ride.data._id); //local storage for rideId....
+
             console.log("Ride created:", ride.data); // ← CHECK THIS
             toast.success("Ride booked successfully!");
 

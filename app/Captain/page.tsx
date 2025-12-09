@@ -50,6 +50,7 @@ export default function CaptainHomepage() {
     useEffect(() => {
         const handler = (ride: any) => {
             setIncomingRide(ride);
+            localStorage.setItem("rideId", ride._id);
             toast.info("New ride request");
         };
         socket.on("new-ride", handler);

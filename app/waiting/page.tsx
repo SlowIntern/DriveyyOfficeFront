@@ -49,7 +49,7 @@ export default function UserWaitingRide() {
             // Auto redirect after 2 sec
             setTimeout(() => {
                 router.push(`/chatui`);
-            }, 2000);
+            }, 20000);
         };
 
         socket.on("ride-confirmed", handler);

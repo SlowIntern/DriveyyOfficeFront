@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { openRazorpayCheckout } from "../lib/razorpay";
 import api from "../lib/api";
+import { useRouter } from "next/navigation";
 
 
 export default function RidePaymentButton({ rideId  }: { rideId: string }) {
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     const handlePayment = async () => {
         setLoading(true);
@@ -25,11 +27,14 @@ export default function RidePaymentButton({ rideId  }: { rideId: string }) {
                 currency: data.currency,
             });
 
+            
+
         } catch (error) {
             console.error("Payment Error:", error);
         }
 
         setLoading(false);
+        router.push("/captainHome");
     };
 
     return (

@@ -1,32 +1,72 @@
 "use client";
 
 import { Car, Menu, X, MapPin, Wallet, Timer, Star } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 
+
+interface Ride {
+    _id: string;
+    pickup: string;
+    destination: string;
+    fare: number;
+    createdAt: string;
+}
+
+interface CaptainDashboard {
+    totalEarning: number;
+    totalRides: number;
+    rideHistory: Ride[];
+    isOnline: boolean;
+}
+
+
+
+
 export default function CaptainHomePage() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [online, setOnline] = useState(false);
-    const { logout,user } = useAuth();
-    const  toggleOnline = async () => {
-        if (!online)
-        {
-            await api.post("/captain/online");
-            setOnline(true);
+    const [dashboard, setDashboard] = useState<CaptainDashboard | null>(null); 
+    const { logout, user } = useAuth();
+
+
+    // Fetch dashboard data
+    const fetchDashboard = async () => {
+        try {
+            const res = await api.get("/rides/dashboard");
+            console.log(res.data);
+            setDashboard(res.data);
+            setOnline(res.data.isOnline); // backend online status
+        } catch (err) {
+            console.error(err);
         }
-        else
-        {
-            await api.post("/captain/offline");
-            setOnline(false);
+    };
+
+    useEffect(() => {
+        fetchDashboard();
+    }, []);
+
+    // Handle online/offline toggle
+    const toggleOnline = async () => {
+        try {
+            if (!online) {
+                await api.post("/captain/online");
+                setOnline(true);
+            } else {
+                await api.post("/captain/offline");
+                setOnline(false);
+            }
+        } catch (err) {
+            console.error(err);
         }
     };
 
     return (
         <div className="min-h-screen bg-linear-to-br from-gray-900 via-black to-gray-900 text-white overflow-hidden relative">
 
-            {/* Animated Background Orbs */}
+            {/* Animated Background */}
             <div className="absolute inset-0 -z-10 overflow-hidden">
                 <div className="absolute top-20 left-20 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
                 <div className="absolute top-40 right-32 w-80 h-80 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-1000"></div>
@@ -48,13 +88,16 @@ export default function CaptainHomePage() {
                     {/* Desktop Menu */}
                     <div className="hidden md:flex items-center space-x-8">
                         <Link href={"/captainHome"} className="text-gray-300 hover:text-white transition-all">Home</Link>
-                        
                         <Link href={"/Captain"} className="text-gray-300 hover:text-white transition-all">Rides Request</Link>
                         <Link href={"/captainProfile"} className="text-gray-300 hover:text-white transition-all">Profile</Link>
-                        {user ? (<button onClick={logout} className="px-5 py-2 bg-linear-to-r from-blue-600 to-purple-600 rounded-full font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all">
-                            Logout
-                        </button>) : (<Link href={"/Login"} className="text-gray-300 hover:text-white transition-all">Login</Link>)}
-                       
+
+                        {user ? (
+                            <button onClick={logout} className="px-5 py-2 bg-linear-to-r from-blue-600 to-purple-600 rounded-full font-medium">
+                                Logout
+                            </button>
+                        ) : (
+                            <Link href={"/Login"} className="text-gray-300 hover:text-white transition-all">Login</Link>
+                        )}
                     </div>
 
                     {/* Mobile Menu */}
@@ -65,30 +108,15 @@ export default function CaptainHomePage() {
                         {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                     </button>
                 </div>
-
-                {mobileMenuOpen && (
-                    <div className="md:hidden bg-black/95 backdrop-blur-lg border-b border-gray-800">
-                        <div className="px-6 py-4 space-y-4">
-                            <Link href={"/captainHome"} className="block text-lg text-gray-300 hover:text-white">Home</Link>
-                            <Link href={"/Captain"} className="block text-lg text-gray-300 hover:text-white">Rides  Request</Link>
-                            <Link href={"/captainProfile"} className="block text-lg text-gray-300 hover:text-white">Profile</Link>
-                
-                            {user ? (<button onClick={logout} className="px-5 py-2 bg-linear-to-r from-blue-600 to-purple-600 rounded-full font-medium hover:shadow-lg hover:shadow-purple-500/25 transition-all">
-                                Logout
-                            </button>) : (<Link href={"/Login"} className="text-gray-300 hover:text-white transition-all">Login</Link>)}
-
-                        </div>
-                    </div>
-                )}
             </nav>
 
-            {/* CAPTAIN MAIN SECTION */}
+            {/* Captain Main */}
             <section className="relative z-10 max-w-7xl mx-auto px-6 py-14">
                 <h1 className="text-4xl md:text-5xl font-bold mb-10">
                     Welcome Captain 👋
                 </h1>
 
-                {/* ONLINE/OFFLINE CARD */}
+                {/* ONLINE/OFFLINE */}
                 <div className="p-8 rounded-3xl bg-gray-900/70 backdrop-blur-xl border border-gray-700 shadow-xl mb-12">
                     <h2 className="text-2xl font-bold mb-4">Availability</h2>
 
@@ -97,70 +125,74 @@ export default function CaptainHomePage() {
                         <button
                             onClick={toggleOnline}
                             className={`px-6 py-3 rounded-xl font-semibold transition-all 
-                                ${online
-                                    ? "bg-green-600 hover:bg-green-700"
-                                    : "bg-red-600 hover:bg-red-700"
-                                }`}
+                                ${online ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
                         >
                             {online ? "Online" : "Offline"}
                         </button>
                     </div>
                 </div>
 
-                {/* EARNINGS + RATINGS + HOURS */}
+                {/* EARNINGS */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                    {/* Earnings */}
-                    <div className="p-6 rounded-2xl bg-gray-900/60 border border-gray-800 backdrop-blur-lg">
+                    <div className="p-6 rounded-2xl bg-gray-900/60 border border-gray-800">
                         <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center mb-4">
                             <Wallet className="w-6 h-6 text-white" />
                         </div>
-                        <h3 className="text-xl font-bold mb-1">Today's Earnings</h3>
-                        <p className="text-3xl font-bold text-green-400">₹850</p>
+                        <h3 className="text-xl font-bold mb-1">Total Earnings</h3>
+
+                        <p className="text-3xl font-bold text-green-400">
+                            ₹{dashboard?.totalEarning ?? 0}
+                        </p>
                     </div>
 
-                    {/* Hours Online */}
-                    <div className="p-6 rounded-2xl bg-gray-900/60 border border-gray-800 backdrop-blur-lg">
+                    <div className="p-6 rounded-2xl bg-gray-900/60 border border-gray-800">
                         <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
                             <Timer className="w-6 h-6 text-white" />
                         </div>
-                        <h3 className="text-xl font-bold mb-1">Hours Online</h3>
-                        <p className="text-3xl font-bold text-blue-400">3h 45m</p>
+                        <h3 className="text-xl font-bold mb-1">Total Rides</h3>
+                        <p className="text-3xl font-bold text-blue-400">{dashboard?.totalRides ?? 0}</p>
                     </div>
 
-                    {/* Rating */}
-                    <div className="p-6 rounded-2xl bg-gray-900/60 border border-gray-800 backdrop-blur-lg">
+                    <div className="p-6 rounded-2xl bg-gray-900/60 border border-gray-800">
                         <div className="w-12 h-12 bg-yellow-600 rounded-xl flex items-center justify-center mb-4">
                             <Star className="w-6 h-6 text-white" />
                         </div>
-                        <h3 className="text-xl font-bold mb-1">Your Rating</h3>
-                        <p className="text-3xl font-bold text-yellow-400">4.88</p>
+                        <h3 className="text-xl font-bold mb-1">Rating</h3>
+                        <p className="text-3xl font-bold text-yellow-400">4.9</p>
                     </div>
                 </div>
 
-                {/* Recent Requests */}
+                {/* RECENT RIDES */}
                 <div>
-                    <h2 className="text-3xl font-bold mb-6">Recent Ride Requests</h2>
+                    <h2 className="text-3xl font-bold mb-6">Recent Rides</h2>
 
                     <div className="grid grid-cols-1 gap-6">
-                        {["Sector 17 → Zirakpur", "Mohali → Chandigarh Airport", "Elante Mall → Sector 40"]
-                            .map((ride, i) => (
-                                <div
-                                    key={i}
-                                    className="p-6 rounded-xl bg-gray-900/60 border border-gray-800 backdrop-blur-md flex justify-between items-center"
-                                >
-                                    <div>
-                                        <h3 className="text-xl font-semibold">{ride}</h3>
-                                        <p className="text-gray-400 text-sm">5 mins ago</p>
-                                    </div>
-                                    <MapPin className="w-8 h-8 text-blue-400" />
+                        {dashboard?.rideHistory?.map((ride) => (
+                            <div
+                                key={ride._id}
+                                className="p-6 rounded-xl bg-gray-900/60 border border-gray-800 backdrop-blur-md flex justify-between items-center"
+                            >
+                                <div>
+                                    <h3 className="text-xl font-semibold">
+                                        {ride.pickup} → {ride.destination}
+                                    </h3>
+                                    <p className="text-gray-400 text-sm">
+                                        Fare: ₹{ride.fare}
+                                    </p>
                                 </div>
-                            ))
-                        }
+                                <MapPin className="w-8 h-8 text-blue-400" />
+                            </div>
+                        ))}
+
+                        {/* If no rides */}
+                        {dashboard?.rideHistory?.length === 0 && (
+                            <p className="text-gray-400">No rides yet.</p>
+                        )}
                     </div>
                 </div>
             </section>
 
-            {/* Footer */}
+            {/* FOOTER */}
             <footer className="bg-black/50 backdrop-blur-md border-t border-gray-800 py-12 px-6">
                 <div className="max-w-7xl mx-auto text-center text-gray-400 text-sm">
                     <p>&copy; 2025 UberX Captain Dashboard. Learn & Build 🚀</p>

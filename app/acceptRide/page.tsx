@@ -29,7 +29,12 @@ export default function StartRidePage() {
         // user exists → fetch ride
         const fetchRide = async () => {
             try {
-                const res = await api.get("/rides/currentride");
+                const rideId = localStorage.getItem("rideId");
+                if (!rideId) return;
+
+                const res = await api.get("rides/currentride", {
+                    params: { rideId }, // pass rideId as query param
+                });
                 setRideId(res.data.rideId);
                 console.log("Ride ID:", res.data._id);
             } catch (err) {

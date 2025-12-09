@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import api from "../lib/api";
+import { toast } from "react-toastify";
 
 
 
@@ -44,6 +45,10 @@ export default function AdminDashboard() {
         await api.delete(`admin/users`);
         fetchUsers();
     }
+
+
+ 
+
 
     return (
         <div className="min-h-screen p-8 bg-gray-900 text-white">
@@ -106,6 +111,18 @@ function TabButton({ label, active, onClick }: any) {
 
 function DataTable({ data, type }: { data: any[]; type: string }) {
 
+    const handleVerify = async (captainId: string) => {
+        try {
+            // Call your backend API
+            const res = await api.post("/admin/verify", { captainId });
+            toast.success("Captain verified!");
+            console.log(res.data);
+        } catch (error) {
+            toast.error("Failed to verify captain");
+            console.error(error);
+        }
+    };
+
     if (data.length === 0) {
         return <p className="text-center text-gray-400 mt-10">No {type} found.</p>;
     }
@@ -116,29 +133,46 @@ function DataTable({ data, type }: { data: any[]; type: string }) {
                 <thead className="bg-gray-800">
                     <tr>
                         {Object.keys(data[0]).map((key) => (
-                            <th key={key} className="px-4 py-3 border-b border-gray-700 capitalize">{key}</th>
+                            <th
+                                key={key}
+                                className="px-4 py-3 border-b border-gray-700 capitalize"
+                            >
+                                {key}
+                            </th>
                         ))}
+                        <th className="px-4 py-3 border-b border-gray-700">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {data.map((item, i) => (
                         <tr key={i} className="hover:bg-gray-800/40">
                             {Object.values(item).map((val: any, j) => (
-                                <td key={j} className="px-4 py-3 border-b border-gray-800 text-gray-300">
+                                <td
+                                    key={j}
+                                    className="px-4 py-3 border-b border-gray-800 text-gray-300"
+                                >
                                     {String(val)}
                                 </td>
-                            
                             ))}
-                            <td>
+
+                            {/* Action buttons */}
+                            <td className="px-4 py-3 border-b border-gray-800 flex gap-2">
                                 <button className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
                                     Delete
                                 </button>
-                            </td>
 
+                                <button
+                                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                                    onClick={() => handleVerify(item._id)}
+                                >
+                                    Verify
+                                </button>
+                            </td>
                         </tr>
                     ))}
                 </tbody>
             </table>
         </div>
     );
+
 }

@@ -16,10 +16,12 @@ type User = {
 
 type Ride = {
     rideId: string;
-    captainsocketId: string;
-    usersocketId: string;
+    userId: string;
+    captainId: string;
     pickup: string;
     destination: string;
+    usersocketId: string;
+    captainsocketId: string;
 };
 
 type ChatMessage = {
@@ -37,11 +39,15 @@ export default function ChatUI() {
 
     async function fetchRideDetail() {
         try {
-            const res = await api.get("rides/currentride");
-            console.log("The ride data is ",res.data);
+            const rideId = localStorage.getItem("rideId");
+            if (!rideId) return;
+            
+            const res = await api.get("rides/currentride", {
+                params: { rideId }, // pass rideId as query param
+            });
             setRide(res.data);
+            console.log("The current ride is",res.data);
         } catch (error) {
-            console.log(error);
             toast.error("Error loading current ride");
         }
     }
@@ -51,8 +57,10 @@ export default function ChatUI() {
             try {
                 const res = await api.get("/auth/profile");
                 setUser(res.data);
+
+                console.log("The login user is", res.data);
+
             } catch (error) {
-                toast.error("Please login to continue");
                 router.push("/Login");
             }
         }
@@ -65,7 +73,10 @@ export default function ChatUI() {
 
     useEffect(() => {
         socket.on("receive-message", (data: any) => {
-            setChat((prev) => [...prev, { sender: data.fromId, text: data.message }]);
+            setChat((prev) => [
+                ...prev,
+                { sender: data.fromId, text: data.message },
+            ]);
         });
 
         return () => {
@@ -78,11 +89,12 @@ export default function ChatUI() {
     }, [chat]);
 
     const sendMessage = () => {
-        if (!ride) return;
+        if (!ride || !user) return;
         if (!message.trim()) return;
 
-        const senderId = ride.usersocketId;
-        const receiverId = ride.captainsocketId;
+        const senderId = user._id;
+        const receiverId =
+            user.role === "user" ? ride.captainId : ride.userId;
 
         const msgObj = {
             rideId: ride.rideId,
@@ -99,19 +111,12 @@ export default function ChatUI() {
 
     return (
         <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center justify-center relative overflow-hidden">
-            {/* ORSMap only rendered when ride is loaded */}
+
             {ride && (
                 <div className="w-full max-w-3xl mb-6 rounded-xl overflow-hidden border border-gray-700">
                     <ORSMap pickup={ride.pickup} destination={ride.destination} />
                 </div>
             )}
-
-            {/* Background gradients */}
-            <div className="absolute inset-0 -z-10">
-                <div className="absolute top-10 left-10 w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-                <div className="absolute top-40 right-20 w-80 h-80 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-500"></div>
-                <div className="absolute bottom-20 left-1/3 w-72 h-72 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse delay-700"></div>
-            </div>
 
             <div className="bg-gray-800 p-6 rounded-xl shadow-lg w-full max-w-md flex flex-col">
                 {!ride ? (
@@ -122,14 +127,9 @@ export default function ChatUI() {
                             Chat for Ride: {ride.rideId}
                         </h2>
 
-                        {/* Chat box */}
                         <div className="flex-1 border border-gray-700 rounded p-3 mb-4 h-80 overflow-y-auto bg-gray-900">
                             {chat.map((msg, idx) => (
-                                <div
-                                    key={idx}
-                                    className={`mb-2 ${msg.sender === "You" ? "text-right" : "text-left"
-                                        }`}
-                                >
+                                <div key={idx} className={`mb-2 ${msg.sender === "You" ? "text-right" : "text-left"}`}>
                                     <span className="font-semibold text-blue-400">
                                         {msg.sender}:
                                     </span>{" "}
@@ -139,7 +139,6 @@ export default function ChatUI() {
                             <div ref={chatEndRef}></div>
                         </div>
 
-                        {/* Input + Send */}
                         <div className="flex gap-2">
                             <input
                                 type="text"
@@ -149,12 +148,14 @@ export default function ChatUI() {
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                             />
+
                             <button
                                 onClick={sendMessage}
                                 className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded text-white font-semibold"
                             >
                                 Send
                             </button>
+
                             {user?.role === "captain" && (
                                 <Link
                                     href="/acceptRide"

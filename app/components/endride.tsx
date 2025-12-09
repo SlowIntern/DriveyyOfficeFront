@@ -5,6 +5,7 @@ import { toast, ToastContainer } from "react-toastify";
 import api from "../lib/api";
 import ORSMap from "./ORSMap";
 import RidePaymentButton from "../razorpay/page";
+import { useRouter } from "next/navigation";
 
 
 type Ride = {
@@ -19,10 +20,16 @@ export default function EndRide() {
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [ride, setRide] = useState<Ride | null>(null);
+    const router = useRouter();
 
     async function fetchRideDetail() {
         try {
-            const res = await api.get("rides/currentride");
+            const rideId = localStorage.getItem("rideId");
+            if (!rideId) return;
+
+            const res = await api.get("rides/currentride", {
+                params: { rideId }, // pass rideId as query param
+            });
             setRide(res.data);
         } catch (error) {
             console.log(error);
@@ -37,8 +44,11 @@ export default function EndRide() {
     const endRide = async () => {
         try {
             setLoading(true);
-            await api.get("/rides/endridebyme"); // End ride API
+            await api.get("/rides/endridebyme"); // End ride API bnya......
             setShowSuccess(true);
+            localStorage.removeItem("rideId");
+            //here write logic to send notification to the user to end right and navigate to payment page
+
             toast.success("Ride ended successfully!");
         } catch (error) {
             console.error(error);
