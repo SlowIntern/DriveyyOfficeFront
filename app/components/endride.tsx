@@ -30,6 +30,7 @@ export default function EndRide() {
             const res = await api.get("rides/currentride", {
                 params: { rideId }, // pass rideId as query param
             });
+            console.log("Current Ride Data:", res.data);
             setRide(res.data);
         } catch (error) {
             console.log(error);
@@ -84,14 +85,9 @@ export default function EndRide() {
 
             {/* Payment Button */}
             {ride && (
-                <button onClick={handlePaymentSuccess}>
-                    <RidePaymentButton
-                        rideId={ride.rideId}
-
-                    />
-                </button>
-              
+                <RidePaymentButton rideId={ride.rideId} />
             )}
+
 
             {/* Loading Spinner */}
             {loading && (

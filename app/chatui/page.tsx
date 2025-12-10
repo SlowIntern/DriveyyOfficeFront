@@ -23,6 +23,7 @@ type Ride = {
     destination: string;
     usersocketId: string;
     captainsocketId: string;
+    otp: string;
 };
 
 type ChatMessage = {
@@ -59,6 +60,7 @@ export default function ChatUI() {
                 if (!rideId) return;
                 const res = await api.get("rides/currentride", { params: { rideId } });
                 setRide(res.data);
+                console.log("Current Ride Data:", res.data);
             } catch (error) {
                 toast.error("Error loading current ride");
             }
@@ -70,7 +72,6 @@ export default function ChatUI() {
     useEffect(() => {
         if (!user || !ride) return;
 
-        // Register socket ID
         socket.emit("register-socket", { userId: user._id, role: user.role });
 
         const handleRegistered = () => {
@@ -80,7 +81,6 @@ export default function ChatUI() {
 
         socket.on("registered", handleRegistered);
 
-        // Cleanup
         return () => {
             socket.off("registered", handleRegistered);
         };
@@ -122,13 +122,42 @@ export default function ChatUI() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center justify-center relative">
+        <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center justify-start relative">
             {ride && (
-                <div className="w-full max-w-3xl mb-6 rounded-xl overflow-hidden border border-gray-700">
-                    <ORSMap pickup={ride.pickup!} destination={ride.destination!} />
+                <div className="w-full max-w-3xl flex flex-col gap-4 mb-6">
+                    {/* --- Ride Details Card --- */}
+                    <div className="bg-gray-800 p-4 rounded-xl shadow border border-gray-700">
+                        <h2 className="text-xl font-bold text-blue-400 mb-2">
+                            Ride Details
+                        </h2>
+                        <p>
+                            <span className="font-semibold">Ride ID:</span> {ride.rideId || ride._id}
+                        </p>
+                        <p>
+                            <span className="font-semibold">Pickup:</span> {ride.pickup}
+                        </p>
+                        <p>
+                            <span className="font-semibold">Destination:</span> {ride.destination}
+                        </p>
+                        <p>
+                            <span className="font-semibold">User ID:</span> {ride.userId}
+                        </p>
+                        <p>
+                            <span className="font-semibold">Captain ID:</span> {ride.captainId}
+                        </p>
+                        <p>
+                            <span className="font-semibold">OTP:</span> {ride.otp}
+                        </p>
+                    </div>
+
+                    {/* --- Smaller Map --- */}
+                    <div className="w-full h-48 rounded-xl overflow-hidden border border-gray-700">
+                        <ORSMap pickup={ride.pickup!} destination={ride.destination!} />
+                    </div>
                 </div>
             )}
 
+            {/* --- Chat Section --- */}
             <div className="bg-gray-800 p-6 rounded-xl shadow-lg w-full max-w-md flex flex-col">
                 {!ride ? (
                     <p className="text-gray-300 text-center">Loading current ride...</p>
@@ -138,7 +167,7 @@ export default function ChatUI() {
                             Chat for Ride: {ride.rideId || ride._id}
                         </h2>
 
-                        <div className="flex-1 border border-gray-700 rounded p-3 mb-4 h-80 overflow-y-auto bg-gray-900">
+                        <div className="flex-1 border border-gray-700 rounded p-3 mb-4 h-64 overflow-y-auto bg-gray-900">
                             {chat.map((msg, idx) => (
                                 <div
                                     key={idx}
