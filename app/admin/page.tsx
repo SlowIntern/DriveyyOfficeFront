@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import api from "../lib/api";
 import { toast } from "react-toastify";
-
-
+import { useRouter } from "next/navigation";
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState<{ users: number; captains: number; rides: number } | null>(null);
@@ -12,6 +11,7 @@ export default function AdminDashboard() {
     const [captains, setCaptains] = useState<any[]>([]);
     const [rides, setRides] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState("users");
+    const router = useRouter();
 
     useEffect(() => {
         fetchStats();
@@ -27,44 +27,33 @@ export default function AdminDashboard() {
     }
 
     async function fetchUsers() {
-        const { data }  = await api.get("admin/users");
+        const { data } = await api.get("admin/users");
         setUsers(data);
     }
 
     async function fetchCaptains() {
-        const { data } =await api.get("admin/captains");
+        const { data } = await api.get("admin/captains");
         setCaptains(data);
     }
 
     async function fetchRides() {
-        const {data} = await api.get("admin/rides");
+        const { data } = await api.get("admin/rides");
         setRides(data);
     }
-
-    async function handleDeleteUser() {
-        await api.delete(`admin/users`);
-        fetchUsers();
-    }
-
-
- 
-
 
     return (
         <div className="min-h-screen p-8 bg-gray-900 text-white">
 
             <div className="max-w-6xl mx-auto">
-                <h1 className="text-4xl font-extrabold text-center mb-10 text-transparent bg-clip-text bg-linear-to-r from-indigo-400 to-cyan-400">
+                <h1 className="text-4xl font-extrabold text-center mb-10 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
                     Admin Dashboard
                 </h1>
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-
                     <DashboardCard title="Total Users" value={stats?.users ?? "..."} gradient="from-indigo-500/40 to-indigo-700/40" />
                     <DashboardCard title="Total Captains" value={stats?.captains ?? "..."} gradient="from-purple-500/40 to-purple-700/40" />
                     <DashboardCard title="Total Rides Booked" value={stats?.rides ?? "..."} gradient="from-cyan-500/40 to-cyan-700/40" />
-
                 </div>
 
                 {/* Tabs */}
@@ -89,7 +78,7 @@ export default function AdminDashboard() {
 function DashboardCard({ title, value, gradient }: any) {
     return (
         <div className="relative p-6 rounded-2xl shadow-lg bg-gray-900/60 border border-gray-700 backdrop-blur-md">
-            <div className={`absolute inset-0 -z-10 bg-linear-to-br ${gradient} rounded-2xl blur-2xl opacity-50`} />
+            <div className={`absolute inset-0 -z-10 bg-gradient-to-br ${gradient} rounded-2xl blur-2xl opacity-50`} />
             <h2 className="text-xl">{title}</h2>
             <p className="text-4xl font-bold mt-3">{value}</p>
         </div>
@@ -109,17 +98,17 @@ function TabButton({ label, active, onClick }: any) {
     );
 }
 
+// --- DATA TABLE ---
 function DataTable({ data, type }: { data: any[]; type: string }) {
+
+    const router = useRouter();
 
     const handleVerify = async (captainId: string) => {
         try {
-            // Call your backend API
             const res = await api.post("/admin/verify", { captainId });
             toast.success("Captain verified!");
-            console.log(res.data);
         } catch (error) {
             toast.error("Failed to verify captain");
-            console.error(error);
         }
     };
 
@@ -133,40 +122,41 @@ function DataTable({ data, type }: { data: any[]; type: string }) {
                 <thead className="bg-gray-800">
                     <tr>
                         {Object.keys(data[0]).map((key) => (
-                            <th
-                                key={key}
-                                className="px-4 py-3 border-b border-gray-700 capitalize"
-                            >
+                            <th key={key} className="px-4 py-3 border-b border-gray-700 capitalize">
                                 {key}
                             </th>
                         ))}
                         <th className="px-4 py-3 border-b border-gray-700">Actions</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     {data.map((item, i) => (
                         <tr key={i} className="hover:bg-gray-800/40">
                             {Object.values(item).map((val: any, j) => (
-                                <td
-                                    key={j}
-                                    className="px-4 py-3 border-b border-gray-800 text-gray-300"
-                                >
+                                <td key={j} className="px-4 py-3 border-b border-gray-800 text-gray-300">
                                     {String(val)}
                                 </td>
                             ))}
 
-                            {/* Action buttons */}
+                            {/* Action Buttons */}
                             <td className="px-4 py-3 border-b border-gray-800 flex gap-2">
+
+                                {/* ALWAYS SHOW DELETE */}
                                 <button className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
                                     Delete
                                 </button>
 
-                                <button
-                                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-                                    onClick={() => handleVerify(item._id)}
-                                >
-                                    Verify
-                                </button>
+                                {/* SHOW VERIFY ONLY FOR CAPTAINS */}
+                                {type === "captains" && (
+                                    <button
+                                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                                        onClick={() => router.push(`/captainDetail/${item._id}`)}//handleVerify(item._id)
+                                    >
+                                        Profile
+                                    </button>
+                                )}
+
                             </td>
                         </tr>
                     ))}
@@ -174,5 +164,8 @@ function DataTable({ data, type }: { data: any[]; type: string }) {
             </table>
         </div>
     );
-
 }
+
+/*
+
+*/

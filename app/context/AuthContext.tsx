@@ -5,13 +5,13 @@ import api from "../lib/api";
 export type User = {
     userId: string;
     email: string;
-    role: 'user' | 'captain';
+    role: 'user' | 'captain' | 'admin';
 };
 
 type AuthContextType = {
     user: User | null;
     loading: boolean;
-    login: (data: { email: string; password: string; role: 'user' | 'captain' }) => Promise<void>;
+    login: (data: { email: string; password: string; role: 'user' | 'captain' | 'admin' }) => Promise<void>;
     logout: () => Promise<void>;
     fetchProfile: () => Promise<void>;
 }
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         fetchProfile(); // load user on first page load
     }, []);
 
-    const login = async (data: { email: string; password: string; role: 'user' | 'captain' }) => {
+    const login = async (data: { email: string; password: string; role: 'user' | 'captain' | 'admin' }) => {
         try {
             await api.post("/auth/login", data);
             await fetchProfile();

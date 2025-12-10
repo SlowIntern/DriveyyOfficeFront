@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 type LoginData = {
     email: string;
     password: string;
-    role: "user" | "captain";
+    role: "user" | "captain" | "admin";
 };
 
 export default function LoginPage() {
@@ -25,7 +25,7 @@ export default function LoginPage() {
             {
                 router.push("/home");
             }
-            else if(data.role){
+            else if(data.role === 'captain'){
                 router.push("/captainHome");
             }
             else {
@@ -85,6 +85,7 @@ export default function LoginPage() {
                         >
                             <option value="user">User</option>
                             <option value="captain">Captain</option>
+                            <option value="admin">Admin</option>
                         </select>
                     </div>
 
