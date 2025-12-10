@@ -41,6 +41,7 @@ export default function UserWaitingRide() {
             setRideInfo(data);
             setShowPopup(true);
 
+
             toast.success("Captain accepted your ride!", {
                 position: "top-center",
                 autoClose: 2000,
@@ -99,7 +100,7 @@ export default function UserWaitingRide() {
                         </p>
 
                         <button
-                            onClick={() => router.push(`/user/ride/${rideInfo?.rideId}`)}
+                            onClick={() => router.push(`/chatui`)}
                             className="mt-4 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg text-white"
                         >
                             Go Now

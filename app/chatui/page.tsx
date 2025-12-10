@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import socket from "../lib/socket";
 import api from "../lib/api";
 import { toast, ToastContainer } from "react-toastify";
 import Link from "next/link";
 import ORSMap from "../components/ORSMap";
-import { useRouter } from "next/navigation";
 
 type User = {
     _id: string;
@@ -34,41 +34,35 @@ export default function ChatUI() {
     const [ride, setRide] = useState<Ride | null>(null);
     const [message, setMessage] = useState("");
     const [chat, setChat] = useState<ChatMessage[]>([]);
-    const chatEndRef = useRef<HTMLDivElement | null>(null);
     const [user, setUser] = useState<User | null>(null);
+    const chatEndRef = useRef<HTMLDivElement | null>(null);
     const router = useRouter();
 
     // ----------------- FETCH LOGGED IN USER -----------------
     useEffect(() => {
-        async function fetchUser() {
+        const fetchUser = async () => {
             try {
                 const res = await api.get("/auth/profile");
                 setUser(res.data);
-                console.log("Logged in user:", res.data);
             } catch (error) {
                 router.push("/Login");
             }
-        }
+        };
         fetchUser();
-    }, []);
+    }, [router]);
 
     // ----------------- FETCH RIDE DETAILS -----------------
-    async function fetchRideDetail() {
-        try {
-            const rideId = localStorage.getItem("rideId");
-            if (!rideId) return;
-
-            const res = await api.get("rides/currentride", {
-                params: { rideId },
-            });
-            setRide(res.data);
-            console.log("Current ride:", res.data);
-        } catch (error) {
-            toast.error("Error loading current ride");
-        }
-    }
-
     useEffect(() => {
+        const fetchRideDetail = async () => {
+            try {
+                const rideId = localStorage.getItem("rideId");
+                if (!rideId) return;
+                const res = await api.get("rides/currentride", { params: { rideId } });
+                setRide(res.data);
+            } catch (error) {
+                toast.error("Error loading current ride");
+            }
+        };
         fetchRideDetail();
     }, []);
 
@@ -76,22 +70,17 @@ export default function ChatUI() {
     useEffect(() => {
         if (!user || !ride) return;
 
-        // Register socket ID for this user
-        socket.emit("register-socket", {
-            userId: user._id,
-            role: user.role,
-        });
+        // Register socket ID
+        socket.emit("register-socket", { userId: user._id, role: user.role });
 
         const handleRegistered = () => {
             const currentRideId = ride.rideId || ride._id;
-            if (currentRideId) {
-                socket.emit("join-room", { rideId: currentRideId });
-                console.log("Joined room:", currentRideId);
-            }
+            if (currentRideId) socket.emit("join-room", { rideId: currentRideId });
         };
 
         socket.on("registered", handleRegistered);
 
+        // Cleanup
         return () => {
             socket.off("registered", handleRegistered);
         };
@@ -99,18 +88,14 @@ export default function ChatUI() {
 
     // ----------------- RECEIVE MESSAGES -----------------
     useEffect(() => {
-        const handler = (data: any) => {
-            console.log("Received message:", data);
-            setChat((prev) => [
-                ...prev,
-                { sender: data.fromId, text: data.message },
-            ]);
+        const handleMessage = (data: { fromId: string; message: string }) => {
+            setChat((prev) => [...prev, { sender: data.fromId, text: data.message }]);
         };
 
-        socket.on("receive-message", handler);
+        socket.on("receive-message", handleMessage);
 
         return () => {
-            socket.off("receive-message", handler);
+            socket.off("receive-message", handleMessage);
         };
     }, []);
 
@@ -123,26 +108,21 @@ export default function ChatUI() {
     const sendMessage = () => {
         if (!ride || !user || !message.trim()) return;
 
-        const senderId = user._id;
-        const receiverId =
-            user.role === "user" ? ride.captainId : ride.userId;
+        const receiverId = user.role === "user" ? ride.captainId : ride.userId;
 
-        const msgObj = {
+        socket.emit("send-message", {
             rideId: ride.rideId || ride._id,
-            fromId: senderId,
+            fromId: user._id,
             toId: receiverId,
             message,
-        };
-
-        socket.emit("send-message", msgObj);
+        });
 
         setChat((prev) => [...prev, { sender: "You", text: message }]);
         setMessage("");
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center justify-center relative overflow-hidden">
-
+        <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center justify-center relative">
             {ride && (
                 <div className="w-full max-w-3xl mb-6 rounded-xl overflow-hidden border border-gray-700">
                     <ORSMap pickup={ride.pickup!} destination={ride.destination!} />
@@ -160,7 +140,11 @@ export default function ChatUI() {
 
                         <div className="flex-1 border border-gray-700 rounded p-3 mb-4 h-80 overflow-y-auto bg-gray-900">
                             {chat.map((msg, idx) => (
-                                <div key={idx} className={`mb-2 ${msg.sender === "You" ? "text-right" : "text-left"}`}>
+                                <div
+                                    key={idx}
+                                    className={`mb-2 ${msg.sender === "You" ? "text-right" : "text-left"
+                                        }`}
+                                >
                                     <span className="font-semibold text-blue-400">
                                         {msg.sender}:
                                     </span>{" "}
@@ -190,7 +174,7 @@ export default function ChatUI() {
                             {user?.role === "captain" && (
                                 <Link
                                     href="/acceptRide"
-                                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded text-white font-semibold"
+                                    className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded text-white font-semibold"
                                 >
                                     Start Ride
                                 </Link>
