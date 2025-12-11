@@ -39,6 +39,26 @@ export default function ChatUI() {
     const chatEndRef = useRef<HTMLDivElement | null>(null);
     const router = useRouter();
 
+
+    useEffect(() => {
+        // Listen for ride-ended event ONLY for the user
+        socket.on("ride-ended", (data) => {
+            console.log("Ride ended:", data);
+
+            // Show notification
+            alert("Your ride has been ended!");
+            if(user?.role === "user"){
+                router.push("/home");
+            }
+            // Optional: Navigate to summary page
+            // router.push(`/ride-summary/${data._id}`);
+        });
+
+        return () => {
+            socket.off("ride-ended");
+        };
+    }, []);
+
     // ----------------- FETCH LOGGED IN USER -----------------
     useEffect(() => {
         const fetchUser = async () => {
