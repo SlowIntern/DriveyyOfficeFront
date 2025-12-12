@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
+import { useRouter } from "next/navigation";
+
+
 type rides = {
     id: string,
     source: string,
@@ -16,6 +19,7 @@ export default function StartRidePage() {
     const [showSuccess, setShowSuccess] = useState(false);
     const[ride,setRide]= useState<rides | null>(null)
     const { user } = useAuth();
+    const router = useRouter();
 
 
     useEffect(() => {
@@ -63,6 +67,8 @@ export default function StartRidePage() {
             console.log(res.data);
             setShowSuccess(true);
             toast.success("Ride started successfully!");
+
+        
         } catch (error) {
             console.error(error);
             toast.error("Error starting ride");

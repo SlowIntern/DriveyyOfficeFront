@@ -85,7 +85,7 @@ export default function EndRide() {
 
             {/* Payment Button */}
             {ride && (
-                <RidePaymentButton rideId={ride.rideId} />
+                <RidePaymentButton rideId={ride.rideId}/>
             )}
 
 

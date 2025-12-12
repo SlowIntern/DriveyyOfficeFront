@@ -24,6 +24,7 @@ type Ride = {
     usersocketId: string;
     captainsocketId: string;
     otp: string;
+    status: string;
 };
 
 type ChatMessage = {
@@ -50,7 +51,7 @@ export default function ChatUI() {
             if(user?.role === "user"){
                 router.push("/home");
             }
-            // Optional: Navigate to summary page
+            //Navigate to summary page
             // router.push(`/ride-summary/${data._id}`);
         });
 
@@ -78,15 +79,30 @@ export default function ChatUI() {
             try {
                 const rideId = localStorage.getItem("rideId");
                 if (!rideId) return;
+
                 const res = await api.get("rides/currentride", { params: { rideId } });
                 setRide(res.data);
+
+                // Use fresh data (NOT ride from state)
+                if (res.data?.status === "completed") {
+                    toast.success("Ride Completed, redirecting to home page");
+                    router.push('/home');
+                }
+
                 console.log("Current Ride Data:", res.data);
+
             } catch (error) {
                 toast.error("Error loading current ride");
             }
         };
+
         fetchRideDetail();
+
+        const interval = setInterval(fetchRideDetail, 2000);
+        return () => clearInterval(interval);
     }, []);
+
+
 
     // ----------------- SOCKET REGISTER + JOIN ROOM -----------------
     useEffect(() => {
