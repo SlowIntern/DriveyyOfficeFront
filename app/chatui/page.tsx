@@ -85,8 +85,10 @@ export default function ChatUI() {
 
                 // Use fresh data (NOT ride from state)
                 if (res.data?.status === "completed") {
-                    toast.success("Ride Completed, redirecting to home page");
-                    router.push('/home');
+                 await toast.success("Ride Completed, redirecting to home page");
+                    setTimeout(() => {
+                        router.push('/summary');
+                    }, 2000); 
                 }
 
                 console.log("Current Ride Data:", res.data);

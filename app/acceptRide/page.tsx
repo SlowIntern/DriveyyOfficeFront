@@ -68,11 +68,13 @@ export default function StartRidePage() {
             setShowSuccess(true);
             toast.success("Ride started successfully!");
 
+
         
         } catch (error) {
             console.error(error);
             toast.error("Error starting ride");
         } finally {
+            router.push("/end");
             setLoading(false);
         }
     };

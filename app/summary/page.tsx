@@ -64,7 +64,7 @@ export default function RideSummaryPage() {
                             <p><span className="font-semibold text-white">Ride ID:</span> {ride.rideId}</p>
                             <p><span className="font-semibold text-white">Pickup:</span> {ride.pickup}</p>
                             <p><span className="font-semibold text-white">Destination:</span> {ride.destination}</p>
-                            <p><span className="font-semibold text-white">Status:</span> {ride.status} km</p>
+                            <p><span className="font-semibold text-white">Status:</span> {ride.status}</p>
                      
                         </div>
 
