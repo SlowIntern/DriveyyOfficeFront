@@ -54,12 +54,12 @@ export default function ORSMap({ pickup, destination }: ORSMapProps) {
         const fetchRoute = async () => {
             setLoading(true);
             try {
-                // 1️⃣ Get coordinates for pickup and destination
+                // Get coordinates for pickup and destination
                 const pickupCoords = await fetchCoordinates(pickup);
                 const destinationCoords = await fetchCoordinates(destination);
                 setCoords({ pickup: pickupCoords, destination: destinationCoords });
 
-                // 2️⃣ Fetch route from OpenRouteService
+                //  Fetch route from OpenRouteService
                 const response = await fetch(
                     "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
                     {
@@ -85,7 +85,7 @@ export default function ORSMap({ pickup, destination }: ORSMapProps) {
                     return;
                 }
 
-                // 3️⃣ Convert ORS [lon, lat] → Leaflet [lat, lon]
+                //  Convert ORS [lon, lat] → Leaflet [lat, lon]
                 const routeCoords: [number, number][] = data.features[0].geometry.coordinates.map(
                     (c: any) => [Number(c[1]), Number(c[0])]
                 );

@@ -18,11 +18,16 @@ type User = {
 type RideData = {
     pickup: string;
     destination: string;
+    rideType?:"return"|"simple"
 };
 
 export default function UberCloneHomepage() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const { register, handleSubmit, reset, getValues } = useForm<RideData>();
+    const { register, handleSubmit, reset, getValues } = useForm<RideData>({
+        defaultValues: {
+            rideType: "simple",
+        },
+    });
     const [users, setUser] = useState<User | null>(null);
     const router = useRouter();
 
@@ -62,6 +67,7 @@ export default function UberCloneHomepage() {
             const res = await api.post("/rides/fare", {
                 pickup: data.pickup,
                 destination: data.destination,
+                
             });
 
             setFareData(res.data);
@@ -81,7 +87,8 @@ export default function UberCloneHomepage() {
             const data = {
                 pickup: getValues("pickup"),
                 destination: getValues("destination"),
-                vehicleType
+                vehicleType,
+                rideType: getValues("rideType"), // for return or simple ride logic
             }
 
             console.log("Ride data:", data);
@@ -175,6 +182,18 @@ export default function UberCloneHomepage() {
                                        
                                     </div>
 
+                                    {/* Ride Type Dropdown */}
+                                    <div className="relative">
+                                        <select
+                                            {...register("rideType", { required: true })}
+                                            className="w-full px-4 py-4 rounded-xl bg-gray-800 border border-gray-700 text-white"
+                                        >
+                                            <option value="simple">One Way</option>
+                                            <option value="return">Return</option>
+                                        </select>
+                                    </div>
+
+
                                     {/* Search Price Button */}
                                     <button
                                         type="button"
@@ -204,6 +223,7 @@ export default function UberCloneHomepage() {
                                             ))}
                                         </div>
                                     )}
+                                    
                                 </div>
                             </div>
                         </form>
