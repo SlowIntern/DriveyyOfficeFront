@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 
 interface ORSMapProps {
-    pickup: string;      // e.g., "New Delhi, India"
-    destination: string; // e.g., "Noida, India"
+    pickup: string;      //here are the pickup location.....  
+    destination: string;  // here are the destination location.....
 }
 
 // Custom start and end icons

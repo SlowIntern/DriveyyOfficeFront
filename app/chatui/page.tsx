@@ -25,6 +25,7 @@ type Ride = {
     captainsocketId: string;
     otp: string;
     status: string;
+    rideType: string;
 };
 
 type ChatMessage = {
@@ -185,6 +186,9 @@ export default function ChatUI() {
                         </p>
                         <p>
                             <span className="font-semibold">OTP:</span> {ride.otp}
+                        </p>
+                        <p>
+                            <span className="font-semibold">RideType:</span> {ride.rideType}
                         </p>
                     </div>
 

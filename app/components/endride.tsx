@@ -7,19 +7,22 @@ import ORSMap from "./ORSMap";
 import RidePaymentButton from "../razorpay/page";
 import { useRouter } from "next/navigation";
 
-
 type Ride = {
     rideId: string;
     captainsocketId: string;
     usersocketId: string;
     pickup: string;
     destination: string;
+    rideType: string; // "normal" | "return"
 };
 
 export default function EndRide() {
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [ride, setRide] = useState<Ride | null>(null);
+    const [elapsedTime, setElapsedTime] = useState(0); // seconds
+    const [stops, setStops] = useState<string[]>([]);
+    const [newStop, setNewStop] = useState("");
     const router = useRouter();
 
     async function fetchRideDetail() {
@@ -28,9 +31,8 @@ export default function EndRide() {
             if (!rideId) return;
 
             const res = await api.get("rides/currentride", {
-                params: { rideId }, // pass rideId as query param
+                params: { rideId },
             });
-            console.log("Current Ride Data:", res.data);
             setRide(res.data);
         } catch (error) {
             console.log(error);
@@ -42,14 +44,42 @@ export default function EndRide() {
         fetchRideDetail();
     }, []);
 
+    // Stopwatch logic
+    useEffect(() => {
+        if (!ride) return;
+
+        const start = Date.now();
+        const interval = setInterval(() => {
+            const now = Date.now();
+            setElapsedTime(Math.floor((now - start) / 1000));
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [ride]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60).toString().padStart(2, "0");
+        const secs = (seconds % 60).toString().padStart(2, "0");
+        return `${mins}:${secs}`;
+    };
+
+    const addStop = () => {
+        if (newStop.trim() === "") return;
+        setStops([...stops, newStop.trim()]);
+        setNewStop("");
+    };
+
+    const removeStop = (index: number) => {
+        setStops(stops.filter((_, i) => i !== index));
+    };
+
     const endRide = async () => {
         try {
             setLoading(true);
-            await api.get("/rides/endridebyme"); // End ride API bnya......
+            // Here you could also send `stops` to the backend if needed
+            await api.get("/rides/endridebyme");
             setShowSuccess(true);
             localStorage.removeItem("rideId");
-            //here write logic to send notification to the user to end right and navigate to payment page
-
             toast.success("Ride ended successfully!");
         } catch (error) {
             console.error(error);
@@ -59,9 +89,8 @@ export default function EndRide() {
         }
     };
 
-    // Called when payment is successful
     const handlePaymentSuccess = async () => {
-        await endRide(); // End the ride automatically after payment
+        await endRide();
         toast.success("Ride ended successfully moving to payment page");
     };
 
@@ -75,19 +104,65 @@ export default function EndRide() {
                 </div>
             )}
 
-            <h1 className="text-4xl font-bold mb-6 bg-linear-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold mb-4 bg-linear-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 End Your Ride
             </h1>
+
+            {/* Stopwatch */}
+            {ride && (
+                <div className="text-2xl font-mono text-center text-green-400 mb-6">
+                    Ride Time: {formatTime(elapsedTime)}
+                </div>
+            )}
+
+            {/* Manual Stops for return ride */}
+            {ride?.rideType === "return" && (
+                <div className="w-full max-w-md mb-6 p-4 rounded-xl bg-gray-800/50 border border-gray-700">
+                    <h2 className="text-xl font-bold mb-2">Add Manual Stops</h2>
+                    <div className="flex gap-2 mb-2">
+                        <input
+                            type="text"
+                            placeholder="Enter stop location"
+                            value={newStop}
+                            onChange={(e) => setNewStop(e.target.value)}
+                            className="flex-1 px-3 py-2 rounded-lg text-black"
+                        />
+                        <button
+                            onClick={addStop}
+                            className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-all"
+                        >
+                            Add
+                        </button>
+                    </div>
+
+                    {/* List of stops */}
+                    {stops.length > 0 && (
+                        <ul className="space-y-1">
+                            {stops.map((stop, index) => (
+                                <li
+                                    key={index}
+                                    className="flex justify-between items-center bg-gray-700/50 px-3 py-1 rounded-lg"
+                                >
+                                    {stop}
+                                    <button
+                                        onClick={() => removeStop(index)}
+                                        className="text-red-400 font-bold"
+                                    >
+                                        X
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            )}
 
             <p className="text-gray-400 text-center mb-6 max-w-md">
                 Complete your payment to safely end your ride.
             </p>
 
             {/* Payment Button */}
-            {ride && (
-                <RidePaymentButton rideId={ride.rideId}/>
-            )}
-
+            {ride && <RidePaymentButton rideId={ride.rideId} />}
 
             {/* Loading Spinner */}
             {loading && (

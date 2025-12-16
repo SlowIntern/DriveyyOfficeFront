@@ -1,6 +1,7 @@
 'use client'
 import { createContext, ReactNode, useEffect, useState } from "react";
 import api from "../lib/api";
+import { useRouter } from "next/navigation";
 
 export type User = {
     userId: string;
@@ -21,6 +22,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
     const fetchProfile = async () => {
         try {
@@ -48,6 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const logout = async () => {
         await api.post("/auth/logout");
+        router.push("/Login");
         setUser(null);
     };
 

@@ -126,9 +126,8 @@ export default function UberCloneHomepage() {
                         {/* Desktop Menu */}
                         <div className="hidden md:flex items-center space-x-8">
                             <Link href={"/home"} className="text-gray-300 hover:text-white">Home</Link>
-                            <Link href={"/captainRegister"} className="text-gray-300 hover:text-white">Drive</Link>
-                            <a href="#" className="text-gray-300 hover:text-white">Business</a>
-                            <a href="#" className="text-gray-300 hover:text-white">About</a>
+                            <Link href={"/captainRegister"} className="text-gray-300 hover:text-white">Register As Captain</Link>
+                            <Link href={"/about"} className="text-gray-300 hover:text-white">About</Link>
                         </div>
 
                         {/* Mobile Menu */}
