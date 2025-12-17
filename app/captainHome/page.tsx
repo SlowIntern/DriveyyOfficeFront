@@ -110,6 +110,46 @@ export default function CaptainHomePage() {
                 </div>
             </nav>
 
+            {/* Mobile Menu Panel */}
+                            {mobileMenuOpen && (
+                                <div className="md:hidden relative z-40 bg-black/90 backdrop-blur-lg border-b border-gray-800">
+                                    <div className="flex flex-col px-6 py-4 space-y-4">
+                                        <Link
+                                            href="/captainHome"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="text-gray-300 hover:text-white"
+                                        >
+                                            Home
+                                        </Link>
+            
+                                        <Link
+                                            href="/Captain"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="text-gray-300 hover:text-white"
+                                        >
+                                            Ride Request
+                                        </Link>
+            
+                                        <Link
+                                href="/captainProfile"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="text-gray-300 hover:text-white"
+                                        >
+                                            Profile
+                                        </Link>
+            
+                                        <Link
+                                            href="/about"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="text-gray-300 hover:text-white"
+                                        >
+                                            About
+                                        </Link>
+                                    </div>
+                                </div>
+                            )}
+            
+
             {/* Captain Main */}
             <section className="relative z-10 max-w-7xl mx-auto px-6 py-14">
                 <h1 className="text-4xl md:text-5xl font-bold mb-10">
