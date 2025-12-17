@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import api from "../lib/api";
 import { toast } from "react-toastify";
+import { useRouter } from "next/navigation";
+
 
 type Captain = {
     _id: string;
@@ -14,6 +16,7 @@ export default function VerifyPage() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const [captain, setCaptain] = useState<Captain | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         async function fetchCaptain() {
@@ -44,6 +47,8 @@ export default function VerifyPage() {
         const data = await res.json();
         setMessage(JSON.stringify(data, null, 2));
         setLoading(false);
+
+        router.push("/captainHome");
     };
 
     return (

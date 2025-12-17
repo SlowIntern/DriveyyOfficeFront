@@ -127,6 +127,7 @@ export default function UberCloneHomepage() {
                         <div className="hidden md:flex items-center space-x-8">
                             <Link href={"/home"} className="text-gray-300 hover:text-white">Home</Link>
                             <Link href={"/captainRegister"} className="text-gray-300 hover:text-white">Register As Captain</Link>
+                            <Link href={"/schedule"} className="text-gray-300 hover:text-white">Schedule Ride</Link>
                             <Link href={"/about"} className="text-gray-300 hover:text-white">About</Link>
                         </div>
 
@@ -136,6 +137,46 @@ export default function UberCloneHomepage() {
                         </button>
                     </div>
                 </nav>
+
+                {/* Mobile Menu Panel */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden relative z-40 bg-black/90 backdrop-blur-lg border-b border-gray-800">
+                        <div className="flex flex-col px-6 py-4 space-y-4">
+                            <Link
+                                href="/home"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="text-gray-300 hover:text-white"
+                            >
+                                Home
+                            </Link>
+
+                            <Link
+                                href="/captainRegister"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="text-gray-300 hover:text-white"
+                            >
+                                Register As Captain
+                            </Link>
+
+                            <Link
+                                href="/schedule"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="text-gray-300 hover:text-white"
+                            >
+                                Schedule Ride
+                            </Link>
+
+                            <Link
+                                href="/about"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="text-gray-300 hover:text-white"
+                            >
+                                About
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
 
                 {/* Hero Section */}
                 <section className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-32">

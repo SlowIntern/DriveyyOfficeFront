@@ -2,59 +2,63 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import api from "../lib/api";
 import ORSMap from "./ORSMap";
 import RidePaymentButton from "../razorpay/page";
 import { useRouter } from "next/navigation";
 
+/* ---------------- TYPES ---------------- */
 type Ride = {
     rideId: string;
-    captainsocketId: string;
-    usersocketId: string;
     pickup: string;
     destination: string;
-    rideType: string; // normal | return
+    rideType: "normal" | "return";
+    fare: number;
 };
 
 export default function EndRide() {
+    const router = useRouter();
+
+    const [ride, setRide] = useState<Ride | null>(null);
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
-    const [ride, setRide] = useState<Ride | null>(null);
 
-    // Ride Timer
+    /* Ride timer */
     const [elapsedTime, setElapsedTime] = useState(0);
 
-    // Waiting Timer
-    const [waitingTime, setWaitingTime] = useState(0);
+    /* Waiting timer */
+    const [waitingTime, setWaitingTime] = useState(0); // seconds
     const [isWaiting, setIsWaiting] = useState(false);
+    const [waitingSent, setWaitingSent] = useState(false);
+
     const waitingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Stops
+    /* Stops */
     const [stops, setStops] = useState<string[]>([]);
     const [newStop, setNewStop] = useState("");
 
-    const router = useRouter();
-
     /* ---------------- FETCH RIDE ---------------- */
-    async function fetchRideDetail() {
-        try {
-            const rideId = localStorage.getItem("rideId");
-            if (!rideId) return;
-
-            const res = await api.get("rides/currentride", {
-                params: { rideId },
-            });
-            setRide(res.data);
-        } catch (error) {
-            toast.error("Error loading current ride");
-        }
-    }
-
     useEffect(() => {
-        fetchRideDetail();
+        const fetchRide = async () => {
+            try {
+                const rideId = localStorage.getItem("rideId");
+                if (!rideId) return;
+
+                const res = await api.get("/rides/currentride", {
+                    params: { rideId },
+                });
+
+                setRide(res.data);
+            } catch {
+                toast.error("Failed to load ride");
+            }
+        };
+
+        fetchRide();
     }, []);
 
-    /* ---------------- RIDE STOPWATCH ---------------- */
+    /* ---------------- RIDE TIMER ---------------- */
     useEffect(() => {
         if (!ride) return;
 
@@ -66,39 +70,69 @@ export default function EndRide() {
         return () => clearInterval(interval);
     }, [ride]);
 
-    /* ---------------- WAITING STOPWATCH ---------------- */
+    /* ---------------- WAITING TIMER ---------------- */
     const startWaiting = () => {
-        if (waitingIntervalRef.current) return;
-        setIsWaiting(true);
+        if (waitingIntervalRef.current || waitingSent) return;
 
+        setIsWaiting(true);
         waitingIntervalRef.current = setInterval(() => {
             setWaitingTime((prev) => prev + 1);
         }, 1000);
     };
 
-    const pauseWaiting = () => {
+    const pauseWaiting = async () => {
         if (waitingIntervalRef.current) {
             clearInterval(waitingIntervalRef.current);
             waitingIntervalRef.current = null;
         }
         setIsWaiting(false);
-    };
 
-    const resumeWaiting = () => {
-        startWaiting();
+        await sendWaitingCharges(); // 👈 API CALL HERE
     };
 
     const resetWaiting = () => {
-        pauseWaiting();
+        if (waitingIntervalRef.current) {
+            clearInterval(waitingIntervalRef.current);
+            waitingIntervalRef.current = null;
+        }
+        setIsWaiting(false);
         setWaitingTime(0);
+        setWaitingSent(false);
+    };
+
+    /* ---------------- SEND WAITING CHARGES ---------------- */
+    const sendWaitingCharges = async () => {
+        if (waitingSent || waitingTime <= 0) return;
+
+        try {
+            const rideId = localStorage.getItem("rideId");
+            if (!rideId) return;
+
+            await api.post("/rides/waiting", {
+                rideId,
+                waitingTime, // seconds
+            });
+
+            setWaitingSent(true);
+            toast.success("Waiting charges added");
+        } catch (error: any) {
+            toast.error(
+                error?.response?.data?.message || "Failed to add waiting charges"
+            );
+        }
     };
 
     /* ---------------- HELPERS ---------------- */
     const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60).toString().padStart(2, "0");
+        const mins = Math.floor(seconds / 60)
+            .toString()
+            .padStart(2, "0");
         const secs = (seconds % 60).toString().padStart(2, "0");
         return `${mins}:${secs}`;
     };
+
+    const waitingMinutes = Math.floor(waitingTime / 60);
+    const waitingCharge = Math.floor(waitingMinutes / 10) * 5;
 
     /* ---------------- STOPS ---------------- */
     const addStop = () => {
@@ -116,97 +150,117 @@ export default function EndRide() {
         try {
             setLoading(true);
 
+            const rideId = localStorage.getItem("rideId");
+            if (!rideId) return;
+
+            // Safety: send waiting charges if not already sent
+            if (!waitingSent && waitingTime > 0) {
+                await sendWaitingCharges();
+            }
+
             await api.post("/rides/endridebyme", {
-                waitingTimeInSeconds: waitingTime,
+                rideId,
                 stops,
             });
 
             localStorage.removeItem("rideId");
+            toast.success("Ride ended successfully");
             setShowSuccess(true);
-            toast.success("Ride ended successfully!");
-        } catch (error) {
-            toast.error("Error ending ride");
+        } catch {
+            toast.error("Failed to end ride");
         } finally {
             setLoading(false);
         }
     };
 
+    /* ---------------- UI ---------------- */
     return (
         <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center">
-
-            {/* MAP */}
             {ride && (
                 <div className="w-full max-w-3xl mb-6 rounded-xl overflow-hidden border border-gray-700">
                     <ORSMap pickup={ride.pickup} destination={ride.destination} />
                 </div>
             )}
 
-            <h1 className="text-4xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
-                End Your Ride
-            </h1>
+            <h1 className="text-4xl font-bold mb-4">End Ride</h1>
 
-            {/* RIDE TIMER */}
             <div className="text-2xl font-mono text-green-400 mb-4">
                 Ride Time: {formatTime(elapsedTime)}
             </div>
 
-            {/* WAITING TIMER */}
-            <div className="w-full max-w-md bg-gray-800/60 p-4 rounded-xl border border-gray-700 mb-6">
+            {/* WAITING */}
+            <div className="w-full max-w-md bg-gray-800 p-4 rounded-xl border border-gray-700 mb-6">
                 <h2 className="text-xl font-bold mb-2 text-yellow-400">
-                    Waiting Timer (Stop Area)
+                    Waiting Timer
                 </h2>
 
-                <p className="text-2xl font-mono text-center mb-4">
+                <p className="text-2xl font-mono text-center mb-2">
                     {formatTime(waitingTime)}
                 </p>
 
+                <p className="text-center text-sm text-gray-400 mb-4">
+                    Waiting Charge: ₹{waitingCharge}
+                </p>
+
                 <div className="flex justify-center gap-3">
-                    {!isWaiting && waitingTime === 0 && (
-                        <button onClick={startWaiting} className="px-4 py-2 bg-green-600 rounded-lg">
+                    {!isWaiting && !waitingSent && (
+                        <button
+                            onClick={startWaiting}
+                            className="px-4 py-2 bg-green-600 rounded-lg"
+                        >
                             Start
                         </button>
                     )}
 
                     {isWaiting && (
-                        <button onClick={pauseWaiting} className="px-4 py-2 bg-yellow-600 rounded-lg">
+                        <button
+                            onClick={pauseWaiting}
+                            className="px-4 py-2 bg-yellow-600 rounded-lg"
+                        >
                             Pause
                         </button>
                     )}
 
-                    {!isWaiting && waitingTime > 0 && (
-                        <button onClick={resumeWaiting} className="px-4 py-2 bg-blue-600 rounded-lg">
-                            Resume
-                        </button>
-                    )}
-
-                    <button onClick={resetWaiting} className="px-4 py-2 bg-red-600 rounded-lg">
+                    <button
+                        onClick={resetWaiting}
+                        className="px-4 py-2 bg-red-600 rounded-lg"
+                    >
                         Reset
                     </button>
                 </div>
             </div>
 
-            {/* RETURN RIDE STOPS */}
+            {/* STOPS */}
             {ride?.rideType === "return" && (
-                <div className="w-full max-w-md mb-6 p-4 bg-gray-800/50 rounded-xl border border-gray-700">
-                    <h2 className="text-xl font-bold mb-2">Manual Stops</h2>
+                <div className="w-full max-w-md mb-6 bg-gray-800 p-4 rounded-xl">
+                    <h2 className="text-lg font-bold mb-2">Stops</h2>
+
                     <div className="flex gap-2 mb-2">
                         <input
-                            type="text"
                             value={newStop}
                             onChange={(e) => setNewStop(e.target.value)}
-                            placeholder="Enter stop"
-                            className="flex-1 px-3 py-2 rounded-lg text-black"
+                            placeholder="Add stop"
+                            className="flex-1 px-3 py-2 text-black rounded-lg"
                         />
-                        <button onClick={addStop} className="bg-blue-600 px-4 py-2 rounded-lg">
+                        <button
+                            onClick={addStop}
+                            className="bg-blue-600 px-4 py-2 rounded-lg"
+                        >
                             Add
                         </button>
                     </div>
 
                     <ul className="space-y-1">
                         {stops.map((stop, index) => (
-                            <li key={index} className="flex justify-between bg-gray-700/50 px-3 py-1 rounded-lg">
+                            <li
+                                key={index}
+                                className="flex justify-between bg-gray-700 px-3 py-1 rounded-lg"
+                            >
                                 {stop}
-                                <button onClick={() => removeStop(index)} className="text-red-400">
+                                <button
+                                    onClick={() => removeStop(index)}
+                                    className="text-red-400"
+                                >
                                     X
                                 </button>
                             </li>
@@ -215,10 +269,8 @@ export default function EndRide() {
                 </div>
             )}
 
-            {/* PAYMENT */}
             {ride && <RidePaymentButton rideId={ride.rideId} />}
 
-            {/* END RIDE */}
             <button
                 onClick={endRide}
                 disabled={loading}
@@ -227,21 +279,21 @@ export default function EndRide() {
                 End Ride
             </button>
 
-            {/* LOADER */}
             {loading && (
-                <div className="w-16 h-16 border-4 border-t-red-400 border-gray-700 rounded-full animate-spin mt-6"></div>
+                <div className="w-12 h-12 border-4 border-t-red-500 border-gray-600 rounded-full animate-spin mt-4" />
             )}
 
-            {/* SUCCESS MODAL */}
             {showSuccess && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
                     <div className="bg-gray-800 p-6 rounded-xl text-center">
-                        <h2 className="text-2xl text-green-400 font-bold">Ride Ended!</h2>
+                        <h2 className="text-2xl text-green-400 font-bold">
+                            Ride Completed
+                        </h2>
                         <button
-                            onClick={() => setShowSuccess(false)}
+                            onClick={() => router.push("/")}
                             className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
                         >
-                            Close
+                            Go Home
                         </button>
                     </div>
                 </div>
