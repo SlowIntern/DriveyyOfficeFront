@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         fetchProfile(); // load user on first page load
     }, []);
 
+
     const login = async (data: { email: string; password: string; role: 'user' | 'captain' | 'admin' }) => {
         try {
             await api.post("/auth/login", data);

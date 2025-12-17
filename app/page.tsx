@@ -3,7 +3,7 @@ import UberCloneHomepage from "./home/page";
 
 // Dynamic import for Leaflet map (client-side only)
 const MapPolygon = dynamic(() => import("./components/MapPolygon"), {
-  ssr: false,
+  ssr: true,
 });
 
 export default function Home() {
