@@ -29,14 +29,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const res = await api.get("/auth/profile");
             setUser(res.data);
         } catch (error) {
-            setUser(null);  // ❗ Do NOT throw — just clear user
+            setUser(null);  //  Do NOT throw — just clear user
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchProfile(); // load user on first page load
+        fetchProfile(); //load user on first page load
     }, []);
 
 

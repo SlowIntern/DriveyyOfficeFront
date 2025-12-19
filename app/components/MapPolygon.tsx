@@ -7,18 +7,25 @@ import api from "../lib/api";
 
 export default function MapPolygon() {
     const mapRef = useRef<L.Map | null>(null);
+
+    const polylineRef = useRef<L.Polyline | null>(null);
     const polygonRef = useRef<L.Polygon | null>(null);
     const latlngsRef = useRef<L.LatLng[]>([]);
+
     const savedLayerRef = useRef<L.FeatureGroup | null>(null);
+    const savedPolygonsRef = useRef<L.Polygon[]>([]);
 
     const [areaName, setAreaName] = useState("");
     const [saving, setSaving] = useState(false);
 
-    /* ------------------ INIT MAP ------------------ */
+    /* ---------------- INIT MAP ---------------- */
     useEffect(() => {
         if (mapRef.current) return;
+    
+        const map = L.map("map", {
+            doubleClickZoom: false,
+        }).setView([20.5937, 78.9629], 6);
 
-        const map = L.map("map").setView([20.5937, 78.9629], 6);
         mapRef.current = map;
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -27,39 +34,73 @@ export default function MapPolygon() {
 
         savedLayerRef.current = L.featureGroup().addTo(map);
 
-        map.on("click", (e: L.LeafletMouseEvent) => {
-            latlngsRef.current.push(e.latlng);
+        map.on("click", (e) => {
+            const point = e.latlng;
 
-            polygonRef.current?.remove();
+            //  BLOCK drawing inside ANY saved polygon
+            const blocked = savedPolygonsRef.current.some((poly) =>
+                poly.getBounds().contains(point)
+            );
 
-            polygonRef.current = L.polygon(latlngsRef.current, {
-                color: "#e11d48",
-                fillOpacity: 0.35,
-            }).addTo(map);
+            if (blocked) {
+                alert("Cannot draw inside an existing service area");
+                return;
+            }
+
+            latlngsRef.current.push(point);
+
+            // Preview polyline
+            if (!polylineRef.current) {
+                polylineRef.current = L.polyline(latlngsRef.current, {
+                    color: "#e11d48",
+                    weight: 2,
+                }).addTo(map);
+            } else {
+                polylineRef.current.setLatLngs(latlngsRef.current);
+            }
+
+            // Polygon after 3 points
+            if (latlngsRef.current.length >= 3) {
+                polygonRef.current?.remove();
+                polygonRef.current = L.polygon(latlngsRef.current, {
+                    color: "#e11d48",
+                    fillOpacity: 0.35,
+                }).addTo(map);
+            }
+        });
+
+        // Finish drawing
+        map.on("dblclick", () => {
+            polylineRef.current?.remove();
+            polylineRef.current = null;
+            latlngsRef.current = [];
         });
     }, []);
 
+    /* ------------ LOAD SAVED AREAS ------------ */
     useEffect(() => {
         if (!mapRef.current || !savedLayerRef.current) return;
 
         api.get("/service-area").then((res) => {
             savedLayerRef.current!.clearLayers();
+            savedPolygonsRef.current = [];
 
             res.data.forEach((area: any) => {
-                const latLngs = area.coordinates.map((c: any) => [
-                    c.lat,
-                    c.lng,
-                ]);
+                const latlngs = area.coordinates.map((c: any) =>
+                    L.latLng(c.lat, c.lng)
+                );
 
-                L.polygon(latLngs, {
+                const polygon = L.polygon(latlngs, {
                     color: "#2563eb",
                     fillOpacity: 0.2,
                 }).addTo(savedLayerRef.current!);
+
+                savedPolygonsRef.current.push(polygon);
             });
         });
     }, []);
 
-    /* ------------------ SAVE POLYGON ------------------ */
+    /* ------------ SAVE POLYGON ------------ */
     const savePolygon = async () => {
         if (!areaName.trim()) {
             alert("Please enter service area name");
@@ -67,118 +108,84 @@ export default function MapPolygon() {
         }
 
         if (latlngsRef.current.length < 3) {
-            alert("Polygon must have at least 3 points");
+            alert("Minimum 3 points required");
             return;
         }
 
         setSaving(true);
 
-        const payload = {
-            name: areaName,
-            coordinates: latlngsRef.current.map((p) => ({
-                lat: p.lat,
-                lng: p.lng,
-            })),
-            isActive: true,
-        };
-
         try {
-            await api.post("/service-area/area", payload);
+            await api.post("/service-area/area", {
+                name: areaName,
+                coordinates: latlngsRef.current.map((p) => ({
+                    lat: p.lat,
+                    lng: p.lng,
+                })),
+                isActive: true,
+            });
 
-            // Reset
+            // Reset drawing
             setAreaName("");
             latlngsRef.current = [];
-            polygonRef.current?.remove();
-            polygonRef.current = null;
 
-            // Reload saved areas
+            polygonRef.current?.remove();
+            polylineRef.current?.remove();
+
+            polygonRef.current = null;
+            polylineRef.current = null;
+
+            // Reload
             const res = await api.get("/service-area");
             savedLayerRef.current!.clearLayers();
+            savedPolygonsRef.current = [];
 
             res.data.forEach((area: any) => {
-                const latLngs = area.coordinates.map((c: any) => [
-                    c.lat,
-                    c.lng,
-                ]);
+                const latlngs = area.coordinates.map((c: any) =>
+                    L.latLng(c.lat, c.lng)
+                );
 
-                L.polygon(latLngs, {
+                const poly = L.polygon(latlngs, {
                     color: "#2563eb",
                     fillOpacity: 0.2,
                 }).addTo(savedLayerRef.current!);
+
+                savedPolygonsRef.current.push(poly);
             });
-        } catch (err) {
-            console.error("Failed to save service area", err);
+        } catch (e) {
             alert("Failed to save service area");
+            console.error(e);
         } finally {
             setSaving(false);
         }
     };
 
     return (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "16px" }}>
-            {/* MAP */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16 }}>
             <div
                 id="map"
                 style={{
-                    height: "520px",
-                    width: "100%",
-                    borderRadius: "10px",
+                    height: 520,
+                    borderRadius: 10,
                     border: "1px solid #e5e7eb",
                 }}
             />
 
-            {/* CONTROL PANEL */}
-            <div
-                style={{
-                    padding: "16px",
-                    borderRadius: "10px",
-                    border: "1px solid #e5e7eb",
-                    background: "#ffffff",
-                }}
-            >
-                <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "12px" }}>
-                    Create Service Area
-                </h3>
-
-                <label style={{ fontSize: "14px", color: "#374151" }}>
-                    Service Area Name
-                </label>
+            <div style={{ padding: 16, border: "1px solid #e5e7eb", borderRadius: 10 }}>
+                <h3>Create Service Area</h3>
 
                 <input
-                    type="text"
                     value={areaName}
                     onChange={(e) => setAreaName(e.target.value)}
-                    placeholder="e.g. South Delhi Zone"
-                    style={{
-                        width: "100%",
-                        marginTop: "6px",
-                        marginBottom: "14px",
-                        padding: "8px 10px",
-                        borderRadius: "6px",
-                        border: "1px solid #d1d5db",
-                        outline: "none",
-                    }}
+                    placeholder="Area name"
+                    style={{ width: "100%", marginBottom: 12 }}
                 />
 
-                <button
-                    onClick={savePolygon}
-                    disabled={saving}
-                    style={{
-                        width: "100%",
-                        padding: "10px",
-                        borderRadius: "6px",
-                        border: "none",
-                        background: saving ? "#9ca3af" : "#2563eb",
-                        color: "#fff",
-                        cursor: saving ? "not-allowed" : "pointer",
-                        fontWeight: 500,
-                    }}
-                >
-                    {saving ? "Saving..." : "Save Service Area"}
+                <button onClick={savePolygon} disabled={saving}>
+                    {saving ? "Saving..." : "Save"}
                 </button>
 
-                <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "10px" }}>
-                    Click on the map to draw polygon (minimum 3 points)
+                <p style={{ fontSize: 12, marginTop: 8 }}>
+                    Click to draw • Double-click to finish
                 </p>
             </div>
         </div>

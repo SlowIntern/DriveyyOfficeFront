@@ -87,7 +87,7 @@ export default function EndRide() {
         }
         setIsWaiting(false);
 
-        await sendWaitingCharges(); // 👈 API CALL HERE
+        await sendWaitingCharges(); // API CALL HERE
     };
 
     const resetWaiting = () => {

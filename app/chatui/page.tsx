@@ -21,62 +21,40 @@ type Ride = {
     captainId: string;
     pickup: string;
     destination: string;
-    usersocketId: string;
-    captainsocketId: string;
     otp: string;
     status: string;
     rideType: string;
 };
 
 type ChatMessage = {
-    sender: string;
+    sender: "You" | "Other";
     text: string;
 };
 
 export default function ChatUI() {
     const [ride, setRide] = useState<Ride | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [message, setMessage] = useState("");
     const [chat, setChat] = useState<ChatMessage[]>([]);
-    const [user, setUser] = useState<User | null>(null);
     const chatEndRef = useRef<HTMLDivElement | null>(null);
     const router = useRouter();
 
-
-    useEffect(() => {
-        // Listen for ride-ended event ONLY for the user
-        socket.on("ride-ended", (data) => {
-            console.log("Ride ended:", data);
-
-            // Show notification
-            alert("Your ride has been ended!");
-            if(user?.role === "user"){
-                router.push("/home");
-            }
-            //Navigate to summary page
-            // router.push(`/ride-summary/${data._id}`);
-        });
-
-        return () => {
-            socket.off("ride-ended");
-        };
-    }, []);
-
-    // ----------------- FETCH LOGGED IN USER -----------------
+    // ---------------- FETCH USER ----------------
     useEffect(() => {
         const fetchUser = async () => {
             try {
                 const res = await api.get("/auth/profile");
                 setUser(res.data);
-            } catch (error) {
+            } catch {
                 router.push("/Login");
             }
         };
         fetchUser();
     }, [router]);
 
-    // ----------------- FETCH RIDE DETAILS -----------------
+    // ---------------- FETCH RIDE DETAILS ----------------
     useEffect(() => {
-        const fetchRideDetail = async () => {
+        const fetchRide = async () => {
             try {
                 const rideId = localStorage.getItem("rideId");
                 if (!rideId) return;
@@ -84,33 +62,25 @@ export default function ChatUI() {
                 const res = await api.get("rides/currentride", { params: { rideId } });
                 setRide(res.data);
 
-                // Use fresh data (NOT ride from state)
-                if (res.data?.status === "completed") {
-                 await toast.success("Ride Completed, redirecting to home page");
-                    setTimeout(() => {
-                        router.push('/summary');
-                    }, 2000); 
+                if (res.data.status === "completed") {
+                    toast.success("Ride Completed, redirecting to summary...");
+                    setTimeout(() => router.push("/summary"), 2000);
                 }
-
-                console.log("Current Ride Data:", res.data);
-
-            } catch (error) {
+            } catch {
                 toast.error("Error loading current ride");
             }
         };
 
-        fetchRideDetail();
-
-        const interval = setInterval(fetchRideDetail, 2000);
+        fetchRide();
+        const interval = setInterval(fetchRide, 2000);
         return () => clearInterval(interval);
-    }, []);
+    }, [router]);
 
-
-
-    // ----------------- SOCKET REGISTER + JOIN ROOM -----------------
+    // ---------------- SOCKET SETUP ----------------
     useEffect(() => {
         if (!user || !ride) return;
 
+        // Register user socket
         socket.emit("register-socket", { userId: user._id, role: user.role });
 
         const handleRegistered = () => {
@@ -120,30 +90,33 @@ export default function ChatUI() {
 
         socket.on("registered", handleRegistered);
 
-        return () => {
-            socket.off("registered", handleRegistered);
+        // Listen for ride-ended event
+        const handleRideEnded = () => {
+            toast.info("Your ride has ended!");
+            if (user.role === "user") router.push("/home");
         };
-    }, [user, ride]);
+        socket.on("ride-ended", handleRideEnded);
 
-    // ----------------- RECEIVE MESSAGES -----------------
-    useEffect(() => {
+        // Listen for incoming messages
         const handleMessage = (data: { fromId: string; message: string }) => {
-            setChat((prev) => [...prev, { sender: data.fromId, text: data.message }]);
+            if (data.fromId === user._id) return; // Ignore own messages
+            setChat((prev) => [...prev, { sender: "Other", text: data.message }]);
         };
-
         socket.on("receive-message", handleMessage);
 
         return () => {
+            socket.off("registered", handleRegistered);
+            socket.off("ride-ended", handleRideEnded);
             socket.off("receive-message", handleMessage);
         };
-    }, []);
+    }, [user, ride, router]);
 
-    // ----------------- SCROLL TO BOTTOM -----------------
+    // ---------------- SCROLL TO BOTTOM ----------------
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [chat]);
 
-    // ----------------- SEND MESSAGE -----------------
+    // ---------------- SEND MESSAGE ----------------
     const sendMessage = () => {
         if (!ride || !user || !message.trim()) return;
 
@@ -164,42 +137,25 @@ export default function ChatUI() {
         <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center justify-start relative">
             {ride && (
                 <div className="w-full max-w-3xl flex flex-col gap-4 mb-6">
-                    {/* --- Ride Details Card --- */}
+                    {/* Ride Details */}
                     <div className="bg-gray-800 p-4 rounded-xl shadow border border-gray-700">
-                        <h2 className="text-xl font-bold text-blue-400 mb-2">
-                            Ride Details
-                        </h2>
-                        <p>
-                            <span className="font-semibold">Ride ID:</span> {ride.rideId || ride._id}
-                        </p>
-                        <p>
-                            <span className="font-semibold">Pickup:</span> {ride.pickup}
-                        </p>
-                        <p>
-                            <span className="font-semibold">Destination:</span> {ride.destination}
-                        </p>
-                        <p>
-                            <span className="font-semibold">User ID:</span> {ride.userId}
-                        </p>
-                        <p>
-                            <span className="font-semibold">Captain ID:</span> {ride.captainId}
-                        </p>
-                        <p>
-                            <span className="font-semibold">OTP:</span> {ride.otp}
-                        </p>
-                        <p>
-                            <span className="font-semibold">RideType:</span> {ride.rideType}
-                        </p>
+                        <h2 className="text-xl font-bold text-blue-400 mb-2">Ride Details</h2>
+                        <p><span className="font-semibold">Ride ID:</span> {ride.rideId || ride._id}</p>
+                        <p><span className="font-semibold">Pickup:</span> {ride.pickup}</p>
+                        <p><span className="font-semibold">Destination:</span> {ride.destination}</p>
+                        <p><span className="font-semibold">User ID:</span> {ride.userId}</p>
+                        <p><span className="font-semibold">Captain ID:</span> {ride.captainId}</p>
+                        <p><span className="font-semibold">OTP:</span> {ride.otp}</p>
+                        <p><span className="font-semibold">Ride Type:</span> {ride.rideType}</p>
                     </div>
 
-                    {/* --- Smaller Map --- */}
                     <div className="w-full h-48 rounded-xl overflow-hidden border border-gray-700">
                         <ORSMap pickup={ride.pickup!} destination={ride.destination!} />
                     </div>
                 </div>
             )}
 
-            {/* --- Chat Section --- */}
+            {/* Chat Section */}
             <div className="bg-gray-800 p-6 rounded-xl shadow-lg w-full max-w-md flex flex-col">
                 {!ride ? (
                     <p className="text-gray-300 text-center">Loading current ride...</p>
@@ -211,14 +167,8 @@ export default function ChatUI() {
 
                         <div className="flex-1 border border-gray-700 rounded p-3 mb-4 h-64 overflow-y-auto bg-gray-900">
                             {chat.map((msg, idx) => (
-                                <div
-                                    key={idx}
-                                    className={`mb-2 ${msg.sender === "You" ? "text-right" : "text-left"
-                                        }`}
-                                >
-                                    <span className="font-semibold text-blue-400">
-                                        {msg.sender}:
-                                    </span>{" "}
+                                <div key={idx} className={`mb-2 ${msg.sender === "You" ? "text-right" : "text-left"}`}>
+                                    <span className="font-semibold text-blue-400">{msg.sender}:</span>{" "}
                                     <span className="text-gray-300">{msg.text}</span>
                                 </div>
                             ))}
@@ -234,7 +184,6 @@ export default function ChatUI() {
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                             />
-
                             <button
                                 onClick={sendMessage}
                                 className="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded text-white font-semibold"

@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { ConfigProvider, theme } from 'antd';
+import 'antd/dist/reset.css';
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastContainer } from "react-toastify";
 import { AuthProvider } from "./context/AuthContext";
 import "leaflet/dist/leaflet.css";
 import Script from "next/script"; // ← ADD THIS
+import 'antd/dist/reset.css';
 
 
 const geistSans = Geist({
@@ -28,6 +31,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+    <ConfigProvider
+      theme={{
+        // algorithm: defaultAlgorithm, // or darkAlgorithm
+        token: {
+          colorPrimary: '#1DA57A',
+          borderRadius: 6,
+        },
+      }}
+    >
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
 
@@ -43,6 +55,7 @@ export default function RootLayout({
         </AuthProvider>
 
       </body>
-    </html>
+      </html>
+    </ConfigProvider>
   );
 }
