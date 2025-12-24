@@ -124,7 +124,7 @@ export default function MapPolygon() {
                 isActive: true,
             });
 
-            // Reset drawing
+            // Reset drawing 
             setAreaName("");
             latlngsRef.current = [];
 

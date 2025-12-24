@@ -46,7 +46,7 @@ export default function StartRidePage() {
             }
         };
 
-        fetchRide(); // <-- MUST CALL IT
+        fetchRide(); 
     }, [user, loading]);
 
 
@@ -56,20 +56,14 @@ export default function StartRidePage() {
             toast.error("Please enter Ride ID and OTP");
             return;
         }
-
         try {
             setLoading(true);
-
             const res = await api.post("/rides/start", null, {
                 params: { rideId, otp },
             });
-
             console.log(res.data);
             setShowSuccess(true);
             toast.success("Ride started successfully!");
-
-
-        
         } catch (error) {
             console.error(error);
             toast.error("Error starting ride");
@@ -103,8 +97,7 @@ export default function StartRidePage() {
                 onChange={(e) => setRideId(e.target.value)}
                 className="border p-3 rounded w-full mb-4 text-black"
             />
-
-            <input
+            <input 
                 type="text"
                 placeholder="OTP"
                 value={otp}

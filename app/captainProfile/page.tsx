@@ -1,11 +1,11 @@
 "use client";
-
+                                                    
 import { useEffect, useState } from "react";
-import api from "../lib/api";
+import api from "../lib/api"; 
 import { toast } from "react-toastify";
 import { Camera, FileCheck } from "lucide-react";
 
-/* ===================== TYPES ===================== */
+
 
 type CaptainData = {
     _id: string;
@@ -30,7 +30,6 @@ type VerifiedDocs = {
     captain: CaptainData;
 };
 
-/* ===================== COMPONENT ===================== */
 
 export default function CaptainProfilePage() {
     const [data, setData] = useState<VerifiedDocs | null>(null);
@@ -137,6 +136,7 @@ export default function CaptainProfilePage() {
                             {renderDoc("RC Back", data.rcBack)}
                         </div>
                     </div>
+                
 
                     {/* Edit Button */}
                     {/* <div className="mt-10 text-center">
@@ -151,7 +151,7 @@ export default function CaptainProfilePage() {
     );
 }
 
-/* ===================== HELPER ===================== */
+
 
 function renderDoc(label: string, url?: string) {
     return (

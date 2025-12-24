@@ -6,7 +6,7 @@ import api from "@/app/lib/api";
 import { toast } from "react-toastify";
 
 export default function CaptainDetailPage() {
-    const { id } = useParams(); // This will get the id from the url path.....
+    const { id } = useParams(); // get the id fromn the url
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);

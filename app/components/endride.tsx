@@ -37,6 +37,7 @@ export default function EndRide() {
     /* Stops */
     const [stops, setStops] = useState<string[]>([]);
     const [newStop, setNewStop] = useState("");
+    const [waitingCharges,setWaitingCharges]=useState(0);
 
     /* ---------------- FETCH RIDE ---------------- */
     useEffect(() => {
@@ -108,10 +109,11 @@ export default function EndRide() {
             const rideId = localStorage.getItem("rideId");
             if (!rideId) return;
 
-            await api.post("/rides/waiting", {
+        let res=   await api.post("/rides/waiting", {
                 rideId,
                 waitingTime, // seconds
-            });
+        });
+            setWaitingCharges(res.data.waitingCharges);
 
             setWaitingSent(true);
             toast.success("Waiting charges added");
@@ -121,6 +123,7 @@ export default function EndRide() {
             );
         }
     };
+   
 
     /* ---------------- HELPERS ---------------- */
     const formatTime = (seconds: number) => {
@@ -199,7 +202,7 @@ export default function EndRide() {
                 </p>
 
                 <p className="text-center text-sm text-gray-400 mb-4">
-                    Waiting Charge: ₹{waitingCharge}
+                    Waiting Charge: ₹{waitingCharges}
                 </p>
 
                 <div className="flex justify-center gap-3">

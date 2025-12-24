@@ -167,5 +167,5 @@ function DataTable({ data, type }: { data: any[]; type: string }) {
 }
 
 /*
-
+work on email setup in nestjs use handlebars 
 */
